@@ -38,15 +38,41 @@ sudo yum -y install mysql-community-server \
                     php71w-tokenizer \
                     php71w-openssl \
                     php71w-pdo \
-                    redis \
+		    php71w-mysqlnd \
+		    redis \
                     nginx1w 
 
-### 004. Local Environment Config ###
-read -p "Local Environment?(Y/N) " ans;
-if [ "$ans" == "Y" -o "$ans" == "y" ]; then
-    sudo yum -y install samba samba-client samba-common cifs-utils
-fi
 
-### 005. Configure Vim ###
+### 004. Configure Vim ###
 echo -e "set nu \nset autoindent\nsyntax on" > ~/.vimrc && \
 sudo cp ~/.vimrc /root
+
+### 005. Local Environment Config ###
+
+read -p "Local Environment?(Y/N) " ans;
+if [ "$ans" == "Y" -o "$ans" == "y" ]; then
+# ------ (1) file share server config ------ #
+    sudo yum -y install samba samba-client samba-common cifs-utils
+
+# ------ (2) online test env config ------ #
+wget https://cli-assets.heroku.com/heroku-cli/channels/stable/heroku-cli-linux-x64.tar.gz -O heroku.tar.gz && \
+tar -xvzf heroku.tar.gz && \
+sudo mv heroku-cli-v*-linux-x64 /usr/local/lib/heroku && \
+sudo ln -s /usr/local/lib/heroku/bin/heroku /usr/local/bin/heroku
+
+# ------- (3) front end workflow config ------ #
+su - root -c 'echo 1 > /proc/sys/net/ipv6/conf/all/disable_ipv6' && \
+su - root -c 'echo 1 > /proc/sys/net/ipv6/conf/default/disable_ipv6' && \
+sudo wget https://dl.yarnpkg.com/rpm/yarn.repo -O /etc/yum.repos.d/yarn.repo && \
+curl --silent --location https://rpm.nodesource.com/setup_6.x | sudo bash - && \
+sudo yum install yarn && \
+su - root -c 'echo 0 > /proc/sys/net/ipv6/conf/default/disable_ipv6' && \
+su - root -c 'echo 0 > /proc/sys/net/ipv6/conf/all/disable_ipv6' && \
+sudo systemctl restart network && \
+echo -e '\n\n\n--------Finish Yarn Install---------\n\n\n'
+
+# ------ (4) composer repository config ------ #
+composer config -g repo.packagist composer https://packagist.laravel-china.org
+
+fi
+
